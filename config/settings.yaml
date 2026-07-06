@@ -1,0 +1,19 @@
+api:
+  host: "0.0.0.0"
+  port: 8081
+
+model:
+  name: "qwen2.5-3b-rk3588"
+  api_key: "EMPTY"
+  max_input_chars: 12000
+  request_timeout_sec: 60
+
+rkllm:
+  library_path: "../rknn-llm-ros/src/rkllm-ros2/lib/librkllmrt.so"
+  model_path: "/data/llm/model/Qwen2.5-3B-w8a8.rkllm"
+  max_new_tokens: 512
+  max_context_len: 2048
+  top_k: 1
+  top_p: 0.95
+  temperature: 0.8
+  repeat_penalty: 1.1

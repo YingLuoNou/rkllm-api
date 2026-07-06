@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import threading
 import time
 from dataclasses import dataclass
@@ -25,16 +24,16 @@ from ctypes import (
 
 @dataclass(frozen=True)
 class LLMDriverConfig:
-    library_path: str = os.getenv("RKLLM_LIBRARY_PATH", "../rkllm-ros2/lib/librkllmrt.so")
-    model_path: str = os.getenv("RKLLM_MODEL_PATH", "/data/llm/model/Qwen2.5-3B-w8a8.rkllm")
-    model_name: str = os.getenv("OPENAI_MODEL_NAME", "qwen2.5-3b-rk3588")
-    max_new_tokens: int = int(os.getenv("RKLLM_MAX_NEW_TOKENS", "512"))
-    max_context_len: int = int(os.getenv("RKLLM_MAX_CONTEXT_LEN", "2048"))
-    top_k: int = int(os.getenv("RKLLM_TOP_K", "1"))
-    top_p: float = float(os.getenv("RKLLM_TOP_P", "0.95"))
-    temperature: float = float(os.getenv("RKLLM_TEMPERATURE", "0.8"))
-    repeat_penalty: float = float(os.getenv("RKLLM_REPEAT_PENALTY", "1.1"))
-    request_timeout_sec: int = int(os.getenv("OPENAI_REQUEST_TIMEOUT_SEC", "60"))
+    library_path: str = "../rkllm-ros2/lib/librkllmrt.so"
+    model_path: str = "/data/llm/model/Qwen2.5-3B-w8a8.rkllm"
+    model_name: str = "qwen2.5-3b-rk3588"
+    max_new_tokens: int = 512
+    max_context_len: int = 2048
+    top_k: int = 1
+    top_p: float = 0.95
+    temperature: float = 0.8
+    repeat_penalty: float = 1.1
+    request_timeout_sec: int = 60
 
 
 class _RKLLMExtendParam(Structure):

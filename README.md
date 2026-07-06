@@ -23,18 +23,16 @@ pip install -r requirements.txt
 > RK3588 上确保本地上游模型服务已启动并开放 OpenAI 兼容接口。
 > RK3588 上需保证 `librkllmrt.so` 与 `.rkllm` 模型文件可访问。
 
-## 2) 环境变量
+## 2) 配置文件
 
-复制 `.env.example` 并按需修改：
+服务配置统一读取 `config/settings.yaml`，主要项：
 
-- `OPENAI_API_HOST` 默认 `0.0.0.0`
-- `OPENAI_API_PORT` 默认 `8081`
-- `OPENAI_MODEL_NAME` 默认 `qwen2.5-3b-rk3588`
-- `OPENAI_API_KEY` 默认 `EMPTY`（不校验）
-- `RKLLM_LIBRARY_PATH` RKLLM 动态库路径
-- `RKLLM_MODEL_PATH` `.rkllm` 模型路径
-- `RKLLM_MAX_NEW_TOKENS` / `RKLLM_MAX_CONTEXT_LEN`
-- `RKLLM_TOP_K` / `RKLLM_TOP_P` / `RKLLM_TEMPERATURE` / `RKLLM_REPEAT_PENALTY`
+- `api.host` / `api.port`
+- `model.name` / `model.api_key`
+- `model.max_input_chars` / `model.request_timeout_sec`
+- `rkllm.library_path` / `rkllm.model_path`
+- `rkllm.max_new_tokens` / `rkllm.max_context_len`
+- `rkllm.top_k` / `rkllm.top_p` / `rkllm.temperature` / `rkllm.repeat_penalty`
 
 ## 3) 启动
 
