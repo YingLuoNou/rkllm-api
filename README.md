@@ -28,7 +28,7 @@ pip install -r requirements.txt
 复制 `.env.example` 并按需修改：
 
 - `OPENAI_API_HOST` 默认 `0.0.0.0`
-- `OPENAI_API_PORT` 默认 `8080`
+- `OPENAI_API_PORT` 默认 `8081`
 - `OPENAI_MODEL_NAME` 默认 `qwen2.5-3b-rk3588`
 - `OPENAI_API_KEY` 默认 `EMPTY`（不校验）
 - `RKLLM_LIBRARY_PATH` RKLLM 动态库路径
@@ -45,7 +45,7 @@ python main.py
 ## 4) OpenAI 兼容请求示例
 
 ```bash
-curl http://127.0.0.1:8080/v1/chat/completions \
+curl http://127.0.0.1:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model":"qwen2.5-3b-rk3588",
@@ -57,6 +57,6 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 ## 5) 注意事项
 
-- 驱动页地址：`http://<host>:8080/driver`
+- 驱动页地址：`http://<host>:8081/driver`
 - `stream=true` 为协议兼容流式输出（按片段回放最终结果）。
 - 该服务当前为单实例串行推理；并发请求时，后到请求会收到 `NPU busy`。
