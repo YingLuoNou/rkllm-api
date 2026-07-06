@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI驱动页 - web-ai-api</title>
+  <style>
+    :root{--bg:#0b1020;--card:#121a31;--line:#2a355f;--text:#eef3ff;--muted:#a8b3d8;--brand:#6c7dff;--ok:#19c37d;--bad:#ff5c7a}
+    *{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(180deg,#0b1020,#0f1730);color:var(--text)}
+    .wrap{max-width:920px;margin:24px auto;padding:0 16px} .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+    h1{font-size:22px;margin:0 0 8px} .muted{color:var(--muted);font-size:13px} label{display:block;margin:10px 0 6px;color:var(--muted)}
+    input,textarea{width:100%;background:#0d1430;border:1px solid var(--line);color:var(--text);padding:10px;border-radius:10px;outline:none}
+    textarea{min-height:160px;resize:vertical} .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px} button{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
+    .primary{background:var(--brand);color:#fff}.ghost{background:#202a4f;color:#d8e1ff}.ok{color:var(--ok)}.bad{color:var(--bad)}
+    pre{white-space:pre-wrap;background:#0b122a;border:1px solid var(--line);padding:12px;border-radius:10px;min-height:120px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>AI驱动页</h1>
+      <div class="muted">本页直接调用 <code>/v1/chat/completions</code>，用于验证 web-ai-api 驱动链路。</div>
+    </div>
+
+    <div class="card">
+      <label>系统提示（可选）</label>
+      <input id="system" value="你是专业的健身教练，回答简洁可执行。" />
+
+      <label>用户输入</label>
+      <textarea id="user">给我一句深蹲纠错建议</textarea>
+
+      <div class="row">
+        <div>
+          <label>model</label>
+          <input id="model" value="" placeholder="为空则用服务默认模型" />
+        </div>
+        <div>
+          <label>max_tokens</label>
+          <input id="maxTokens" type="number" value="256" min="1" max="4096" />
+        </div>
+        <div>
+          <label>temperature</label>
+          <input id="temperature" type="number" value="0.7" min="0" max="2" step="0.1" />
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" id="send">发送</button>
+        <button class="ghost" id="clear">清空输出</button>
+      </div>
+      <p id="status" class="muted">状态：待命</p>
+    </div>
+
+    <div class="card">
+      <label>模型输出</label>
+      <pre id="output"></pre>
+    </div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id)
+const statusEl = $('status')
+const outputEl = $('output')
+
+$('clear').onclick = () => { outputEl.textContent = ''; statusEl.textContent = '状态：已清空' }
+$('send').onclick = async () => {
+  statusEl.textContent = '状态：请求中...'
+  statusEl.className = 'muted'
+
+  const messages = []
+  const sys = $('system').value.trim()
+  const usr = $('user').value.trim()
+  if (sys) messages.push({ role: 'system', content: sys })
+  if (usr) messages.push({ role: 'user', content: usr })
+
+  const payload = {
+    model: $('model').value.trim() || undefined,
+    messages,
+    max_tokens: Number($('maxTokens').value || 256),
+    temperature: Number($('temperature').value || 0.7),
+    stream: false
+  }
+
+  try {
+    const res = await fetch('/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || JSON.stringify(data))
+
+    const text = data?.choices?.[0]?.message?.content ?? ''
+    outputEl.textContent = text
+    statusEl.textContent = '状态：完成'
+    statusEl.className = 'ok'
+  } catch (e) {
+    outputEl.textContent = String(e)
+    statusEl.textContent = '状态：失败'
+    statusEl.className = 'bad'
+  }
+}
+</script>
+</body>
+</html>
