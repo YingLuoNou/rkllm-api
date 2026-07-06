@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from contextlib import asynccontextmanager
 from typing import Iterator
 
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -13,23 +14,46 @@ from app.config import settings
 from app.llm_driver import LLMDriver, LLMDriverConfig
 from app.schemas import ChatCompletionRequest, ModelCard, ModelListResponse
 
-app = FastAPI(title="Web AI OpenAI-Compatible API", version="0.2.0")
+_driver: LLMDriver | None = None
 templates = Jinja2Templates(directory="app/templates")
 
-_driver = LLMDriver(
-    LLMDriverConfig(
-        library_path=settings.rkllm_library_path,
-        model_path=settings.rkllm_model_path,
-        model_name=settings.model_name,
-        max_new_tokens=settings.rkllm_max_new_tokens,
-        max_context_len=settings.rkllm_max_context_len,
-        top_k=settings.rkllm_top_k,
-        top_p=settings.rkllm_top_p,
-        temperature=settings.rkllm_temperature,
-        repeat_penalty=settings.rkllm_repeat_penalty,
-        request_timeout_sec=settings.request_timeout_sec,
+
+def _build_driver() -> LLMDriver:
+    return LLMDriver(
+        LLMDriverConfig(
+            library_path=settings.rkllm_library_path,
+            model_path=settings.rkllm_model_path,
+            model_name=settings.model_name,
+            max_new_tokens=settings.rkllm_max_new_tokens,
+            max_context_len=settings.rkllm_max_context_len,
+            top_k=settings.rkllm_top_k,
+            top_p=settings.rkllm_top_p,
+            temperature=settings.rkllm_temperature,
+            repeat_penalty=settings.rkllm_repeat_penalty,
+            request_timeout_sec=settings.request_timeout_sec,
+        )
     )
-)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    global _driver
+    _driver = _build_driver()
+    try:
+        yield
+    finally:
+        if _driver is not None:
+            _driver.close()
+            _driver = None
+
+
+app = FastAPI(title="Web AI OpenAI-Compatible API", version="0.2.0", lifespan=lifespan)
+
+
+def _get_driver() -> LLMDriver:
+    if _driver is None:
+        raise HTTPException(status_code=503, detail="LLM driver is not ready")
+    return _driver
 
 
 def _check_api_key(auth_header: str | None) -> None:
@@ -118,9 +142,10 @@ def _stream_chunks(model_name: str, full_text: str) -> Iterator[str]:
 
 @app.get("/healthz")
 def healthz() -> dict:
+    driver = _get_driver()
     return {
         "ok": True,
-        "model": _driver.model_name,
+        "model": driver.model_name,
         "engine": "rkllm-local-npu",
         "rkllm_library_path": settings.rkllm_library_path,
         "rkllm_model_path": settings.rkllm_model_path,
@@ -135,12 +160,14 @@ def driver_page(request: Request):
 @app.get("/v1/models", response_model=ModelListResponse)
 def list_models(authorization: str | None = Header(default=None)) -> ModelListResponse:
     _check_api_key(authorization)
-    return ModelListResponse(data=[ModelCard(id=_driver.model_name, created=int(time.time()))])
+    driver = _get_driver()
+    return ModelListResponse(data=[ModelCard(id=driver.model_name, created=int(time.time()))])
 
 
 @app.post("/v1/chat/completions")
 def chat_completions(req: ChatCompletionRequest, authorization: str | None = Header(default=None)):
     _check_api_key(authorization)
+    driver = _get_driver()
 
     if not req.messages:
         raise HTTPException(status_code=400, detail="messages is required")
@@ -151,7 +178,7 @@ def chat_completions(req: ChatCompletionRequest, authorization: str | None = Hea
         raise HTTPException(status_code=400, detail="Empty prompt")
 
     try:
-        output = _driver.infer(
+        output = driver.infer(
             prompt=prompt,
             max_tokens=req.max_tokens,
             temperature=req.temperature,
@@ -171,13 +198,7 @@ def chat_completions(req: ChatCompletionRequest, authorization: str | None = Hea
 
     return JSONResponse(_to_openai_response(model_name=model_name, content=output))
 
-
-@app.on_event("shutdown")
-def _shutdown_driver() -> None:
-    _driver.close()
-
-
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host=settings.host, port=settings.port, reload=False)
+    uvicorn.run(app, host=settings.host, port=settings.port, reload=False)
