@@ -6,7 +6,7 @@ model:
   name: "qwen2.5-3b-rk3588"
   api_key: "EMPTY"
   max_input_chars: 12000
-  request_timeout_sec: 60
+  request_timeout_sec: 180
 
 rkllm:
   library_path: "../rknn-llm-ros/src/rkllm-ros2/lib/librkllmrt.so"
